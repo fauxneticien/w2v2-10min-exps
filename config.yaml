@@ -1,0 +1,88 @@
+# Weights & Biases
+wandb:
+    entity: ???
+    project: ???
+
+env:
+    # There are some outstanding Trainer() issues that only crop up when using multiple GPUs: https://github.com/huggingface/transformers/issues/14128
+    # So force using 1 GPU (also mimics low-resource environments where multiple GPUs may not be available)
+    # Should be a string value, e.g. "0", "1", or "0,1,2,3"
+    # CUDA_VISIBLE_DEVICES: "0"
+
+    # Change WANDB_MODE to dryrun for development/debugging
+    WANDB_MODE: dryrun
+
+# Dataset-related parameters
+data:
+    # Required arguments specified with ???
+    base_path: ???
+
+    train_tsv: train.tsv
+    eval_tsv: test.tsv
+
+    path_col: path
+    text_col: text
+
+w2v2:
+    # Arguments for Wav2Vec2Processor()
+    # https://huggingface.co/docs/transformers/v4.23.1/model_doc/wav2vec2#transformers.Wav2Vec2Processor
+    proc:
+
+    # Arguments for Wav2Vec2CTCTokenizer()
+    # https://huggingface.co/docs/transformers/v4.23.1/model_doc/wav2vec2#transformers.Wav2Vec2CTCTokenizer
+    tok:
+        vocab_file: vocab.json
+
+    # Arguments for Wav2Vec2FeatureExtractor()
+    # https://huggingface.co/docs/transformers/v4.23.1/model_doc/wav2vec2#transformers.Wav2Vec2FeatureExtractor
+    fext:
+        return_attention_mask: True
+    
+    # Arguments for Wav2Vec2ForCTC(), i.e. model
+    # https://huggingface.co/docs/transformers/v4.23.1/model_doc/wav2vec2#transformers.Wav2Vec2ForCTC
+    model:
+        pretrained_model_name_or_path: facebook/wav2vec2-xls-r-300m
+        mask_time_prob: 0.075
+        # Assuming authors are using 'channel' to mean the feature axis (vs. time axis)
+        mask_feature_prob: 0.008
+        ctc_loss_reduction: 'mean'
+
+    decode:
+        method: greedy
+
+        # method: beam_search
+        # # Arguments for torchaudio.models.decoder.ctc_decoder
+        # # https://github.com/pytorch/audio/blob/main/torchaudio/models/decoder/_ctc_decoder.py#L339
+        # args:
+        #     lexicon: librispeech-4-gram/lexicon.txt
+        #     lm: librispeech-4-gram/lm.bin
+        #     nbest: 1
+        #     beam_size: 50
+        #     lm_weight: 2
+        #     word_score: -1
+
+# Arguments for Trainer()
+# https://huggingface.co/docs/transformers/v4.23.1/main_classes/trainer
+trainargs:
+    seed: 4892
+    output_dir: ???
+    learning_rate: 5e-5
+    per_device_train_batch_size: 1
+    per_device_eval_batch_size: 1
+    gradient_accumulation_steps: 8
+    logging_steps: 100
+    eval_steps: 100
+    save_steps: 100
+    save_total_limit: 1
+    load_best_model_at_end: True
+    max_steps: 20_000
+    # Use adamw_bnb_8bit to make fine-tuning possible using GPU with only 16 GB of VRAM in low-budget/-resource settings
+    # Tested with transformers 4.23.1 (should have 'adamw_bnb_8bit')
+    optim: adamw_bnb_8bit
+    fp16: True
+    metric_for_best_model: wer
+    greater_is_better: False
+    dataloader_num_workers: 2
+    group_by_length: True
+    evaluation_strategy: steps
+    report_to: wandb
