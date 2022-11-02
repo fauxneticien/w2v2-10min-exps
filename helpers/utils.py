@@ -2,7 +2,6 @@ import datasets as hfds
 import jiwer
 import omegaconf as oc
 import pandas as pd
-import pedalboard.io as pboard
 import soundfile as sf
 import os
 import wandb
