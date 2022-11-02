@@ -1,7 +1,7 @@
 # Weights & Biases
-wandb:
-    entity: ???
-    project: ???
+# wandb:
+#     entity: ???
+#     project: ???
 
 env:
     # There are some outstanding Trainer() issues that only crop up when using multiple GPUs: https://github.com/huggingface/transformers/issues/14128

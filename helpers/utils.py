@@ -45,18 +45,25 @@ def make_config(config):
 
         os.environ[key] = value
 
-    run = wandb.init(allow_val_change=True, settings=wandb.Settings(code_dir="."), **config['wandb'])
+    if 'wandb' in config.keys():
 
-    if config.get("--run_name"):
-        # Interpolate 'lr={tranargs[learning_rate]}' to 'lr=0.0001', where config['tranargs']['learning_rate'] = 0.0001
-        run.name = config["--run_name"].format(**config)
+        run = wandb.init(allow_val_change=True, settings=wandb.Settings(code_dir="."), **config['wandb'])
 
-    # Log hyper-parameters not automatically tracked by wandb
-    untracked_args = flat_args_long[ ~flat_args_long.argument.str.contains("w2v2|trainargs|wandb|--", regex=True) ]
-    # Convert to flat dict, e.g. { 'data.base_path' : '/path/to/the/data' }
-    untracked_args = dict([ (d['argument'], d['value']) for d in untracked_args.to_dict(orient='records') ])
+        if config.get("--run_name"):
+            # Interpolate 'lr={tranargs[learning_rate]}' to 'lr=0.0001', where config['tranargs']['learning_rate'] = 0.0001
+            run.name = config["--run_name"].format(**config)
 
-    wandb.config.update(untracked_args, allow_val_change=True)
+        # Log hyper-parameters not automatically tracked by wandb
+        untracked_args = flat_args_long[ ~flat_args_long.argument.str.contains("w2v2|trainargs|wandb|--", regex=True) ]
+        # Convert to flat dict, e.g. { 'data.base_path' : '/path/to/the/data' }
+        untracked_args = dict([ (d['argument'], d['value']) for d in untracked_args.to_dict(orient='records') ])
+
+        wandb.config.update(untracked_args, allow_val_change=True)
+
+    else:
+
+        run = None
+        config['trainargs']['report_to'] = "none"
 
     return config, run
 
