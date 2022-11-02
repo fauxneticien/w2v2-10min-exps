@@ -162,7 +162,9 @@ class MetricsComputer:
         scoring_df = pd.DataFrame({"Reference" : labels, "Prediction"  : preds})
         wandb.log({ "asr_out": wandb.Table(data=scoring_df) })
 
-        print(f"\n{scoring_df}\n")
+        # Print two newlines first to separate table from progress bar
+        print("\n\n")
+        print(scoring_df)
 
         wer = jiwer.wer(labels, preds)
         cer = jiwer.cer(labels, preds)
