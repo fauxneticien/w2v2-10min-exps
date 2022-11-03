@@ -45,7 +45,11 @@ def make_config(config):
 
         os.environ[key] = value
 
-    if 'wandb' in config.keys():
+    if not 'wandb' in config.keys():
+
+        return config, None
+
+    else:
 
         run = wandb.init(allow_val_change=True, settings=wandb.Settings(code_dir="."), **config['wandb'])
 
@@ -60,12 +64,9 @@ def make_config(config):
 
         wandb.config.update(untracked_args, allow_val_change=True)
 
-    else:
+        config['trainargs']['report_to'] = "wandb"
 
-        run = None
-        config['trainargs']['report_to'] = "none"
-
-    return config, run
+        return config, run
 
 def load_datasets(data_config, processor):
 

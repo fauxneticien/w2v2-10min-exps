@@ -85,6 +85,7 @@ class MetricsComputer:
     def __init__(self, config, processor):
 
         self.processor = processor
+        self.report_to = config['trainargs']['report_to']
 
         decode_method = config['w2v2']['decode']['method']
 
@@ -160,7 +161,9 @@ class MetricsComputer:
     def compute_metrics(self, labels, preds):
 
         scoring_df = pd.DataFrame({"Reference" : labels, "Prediction"  : preds})
-        wandb.log({ "asr_out": wandb.Table(data=scoring_df) })
+
+        if self.report_to == 'wandb':
+            wandb.log({ "asr_out": wandb.Table(data=scoring_df) })
 
         # Print two newlines first to separate table from progress bar
         print("\n\n")

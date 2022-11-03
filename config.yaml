@@ -85,4 +85,6 @@ trainargs:
     dataloader_num_workers: 2
     group_by_length: True
     evaluation_strategy: steps
-    report_to: wandb
+    # report_to will automatically be updated to 'wandb'
+    # if wandb.entity and wandb.project are set above
+    report_to: none
