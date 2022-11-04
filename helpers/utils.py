@@ -102,6 +102,13 @@ def load_datasets(data_config, processor):
 
         df['audio'] = [ _read_audio(path) for path in tqdm(df['path'].to_list(), desc="Reading audio data") ]
 
+        if 'subset_train' in data_config:
+
+            df = df.sample(frac=1, random_state=data_config['subset_train']['seed']).copy().reset_index(drop=True)
+            df = df[ df['audio'].apply(lambda s: len(s)/16_000).cumsum() <= (60 * data_config['subset_train']['mins']) ].copy().reset_index(drop=True)
+
+            print(f"Subsetted training data as specified: {data_config['subset_train']['mins']} minutes, random seed {data_config['subset_train']['seed']}. Rows kept: {len(df)}")
+
         dataset = hfds.Dataset.from_pandas(df[['audio', 'text']])
 
         return dataset
