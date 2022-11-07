@@ -8,6 +8,16 @@ import wandb
 
 from tqdm import tqdm
 
+# Taken from https://www.geeksforgeeks.org/print-colors-python-terminal/
+def prRed(skk): print("\033[91m {}\033[00m" .format(skk))
+def prGreen(skk): print("\033[92m {}\033[00m" .format(skk))
+def prYellow(skk): print("\033[93m{}\033[00m" .format(skk))
+def prLightPurple(skk): print("\033[94m {}\033[00m" .format(skk))
+def prPurple(skk): print("\033[95m {}\033[00m" .format(skk))
+def prCyan(skk): print("\033[96m {}\033[00m" .format(skk))
+def prLightGray(skk): print("\033[97m {}\033[00m" .format(skk))
+def prBlack(skk): print("\033[98m {}\033[00m" .format(skk))
+
 def announce(announcement):
     total_width = os.get_terminal_size().columns
     pad_length  = int(total_width/2 - len(announcement)/2 - 1)
@@ -102,12 +112,12 @@ def load_datasets(data_config, processor):
 
         df['audio'] = [ _read_audio(path) for path in tqdm(df['path'].to_list(), desc="Reading audio data") ]
 
-        if 'subset_train' in data_config:
+        if 'subset_train' in data_config and tsv_file == 'train_tsv':
 
             df = df.sample(frac=1, random_state=data_config['subset_train']['seed']).copy().reset_index(drop=True)
             df = df[ df['audio'].apply(lambda s: len(s)/16_000).cumsum() <= (60 * data_config['subset_train']['mins']) ].copy().reset_index(drop=True)
 
-            print(f"Subsetted training data as specified: {data_config['subset_train']['mins']} minutes, random seed {data_config['subset_train']['seed']}. Rows kept: {len(df)}")
+            prYellow(f"Subsetted training data as specified: {data_config['subset_train']['mins']} minutes, random seed {data_config['subset_train']['seed']}. Rows kept: {len(df)}")
 
         dataset = hfds.Dataset.from_pandas(df[['audio', 'text']])
 
