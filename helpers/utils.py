@@ -55,6 +55,12 @@ def make_config(config):
 
         os.environ[key] = value
 
+    # Save a copy of final config in output_dir
+    os.makedirs(config['trainargs']['output_dir'], exist_ok=True)
+    pos_config = os.path.join(config['trainargs']['output_dir'], 'train_config.yaml')
+
+    oc.OmegaConf.save(config, pos_config)
+        
     if not 'wandb' in config.keys():
 
         return config, None
