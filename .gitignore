@@ -1,6 +1,8 @@
 __pycache__/
 *.pyc
 data/*
+models/*
+!models/.gitkeep
 !data/.gitkeep
 !data/gos-demo
 wandb
