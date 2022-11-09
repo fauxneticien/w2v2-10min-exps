@@ -2,6 +2,8 @@ __pycache__/
 *.pyc
 data/*
 models/*
+tmp/*
+!tmp/.gitkeep
 !models/.gitkeep
 !data/.gitkeep
 !data/gos-demo
