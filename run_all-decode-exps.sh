@@ -56,14 +56,14 @@ for lang in "${langs[@]}"; do
 
     # Extract logits using wav2vec 2.0 model for LM decoding experiments
 
-    From dev set (for hyperparameter tuning)
+    # From dev set (for hyperparameter tuning)
     python extract-am-logits.py \
         refs_tsv=${config[dev_tsv]} \
         processor_dir=${config[processor_dir]} \
         checkpoint_dir=${config[checkpoint_dir]} \
         logits_pkl=${dev_logits}
 
-    From test set (for evaluation with best hyperparameter)
+    # From test set (for evaluation with best hyperparameter)
     python extract-am-logits.py \
         refs_tsv=${config[test_tsv]} \
         processor_dir=${config[processor_dir]} \
