@@ -49,33 +49,12 @@ if __name__ == '__main__':
     with open(config.logits_pkl, 'rb') as handle:
         logits_list = pickle.load(handle)
 
-    # preds = process_map(
-    #     logits_to_preds,
-    #     logits_list,
-    #     # Try changing chunksize depending on your hardware set up if process_map() gets stuck!
-    #     # see usage note from tqdm repo:
-    #     # https://github.com/tqdm/tqdm/blob/140c94855bf98e7e0fda55b040a7a2c8ac76e786/tqdm/contrib/concurrent.py#L118
-    #     chunksize=int(len(logits_list) / multiprocessing.cpu_count()),
-    #     ncols=100,
-    #     desc = "Beam search decoding"
-    # )
-
-    # preds = [ logits_to_preds(l) for l in tqdm(logits_list) ]
-
     with Pool(120) as p:
       preds = list(tqdm(p.imap(logits_to_preds, logits_list), ncols=100, total=len(logits_list)))
 
-    # preds_df = pd.DataFrame({
-    #     "path" : [ os.path.basename(p.replace(".npy", "")) for p in logits_list ],
-    #     "pred" : preds
-    # })
-
     refs_df  = pd.read_csv(config.refs_tsv, sep="\t")
-    # refs_df.path = refs_df.path.apply(os.path.basename)
-
-    # refs_df = refs_df.merge(preds_df, on='path', how='left')
 
     wer = jiwer.wer(refs_df['text'].to_list(), preds)
     cer = jiwer.cer(refs_df['text'].to_list(), preds)
 
-    print(f"{wer}, {cer}")
+    print(f"{wer},{cer}")

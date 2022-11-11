@@ -32,4 +32,4 @@ refs_df  = pd.read_csv(config.refs_tsv, sep="\t")
 wer = jiwer.wer(refs_df['text'].to_list(), preds)
 cer = jiwer.cer(refs_df['text'].to_list(), preds)
 
-print(f"{wer}, {cer}")
+print(f"{wer},{cer}")
