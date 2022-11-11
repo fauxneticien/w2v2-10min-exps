@@ -6,17 +6,24 @@ from bayes_opt import BayesianOptimization
 from bayes_opt.logger import JSONLogger
 from bayes_opt.event import Events
 from helpers.utils import announce
+from itertools import count
 from subprocess import Popen, PIPE, CalledProcessError
 
 config = oc.OmegaConf.from_cli()
 
+# BayesianOptimization doesn't seem to pass in iteration so let's keep
+# a global variable for counting
+counter = count(start=1)
+
 def lm_decode(lm_weight, word_score, decode_on='dev', beam_size=500, output='wer_inverse'):
+
+    iteration = next(counter)
 
     if beam_size==500:
         # Print out weights if we're doing the search with beam size 500
         # For the final run, we'll use beam size 1500 as in the original wav2vec 2.0 paper
         print("--")
-        print(f"{lm_weight=}, {word_score=}")
+        print(f"{iteration=} of {config.search_iter}, {lm_weight=}, {word_score=}")
 
     assert decode_on in ['dev', 'test'], ValueError("Unrecognized value for 'decode_on' argument")
 
