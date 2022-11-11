@@ -24,7 +24,7 @@ declare -rgA FRY=(
     [processor_dir]="models/fry_wav2vec2-xls-r-300m-1e-5"
     [checkpoint_dir]="models/fry_wav2vec2-xls-r-300m-1e-5/checkpoint-9000"
 
-    [corpus_txt]="data/lm/gos_clean_40mb.txt"
+    [corpus_txt]="data/lm/fry_clean_40mb.txt"
     # Language model configs, space-separated "n_gram:sample_size" where
     # sample_size is indicated in number of tokens. This size is passed to
     # a Python script, which allows '_' in numbers (e.g. 800_000)
