@@ -51,7 +51,7 @@ sampled_lines = []
 print("Sampling lines ...")
 for line_num in tqdm(line_nums, ncols=100):
 
-    if token_count < int(config['n_tokens']):
+    if token_count < int(config['max_tokens']):
 
         line_txt = lines[line_num]
 
