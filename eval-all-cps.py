@@ -2,6 +2,7 @@ import datasets as hfds
 import glob
 import jiwer
 import numpy as np
+import omegaconf as oc
 import os
 import pandas as pd
 import soundfile as sf
@@ -19,24 +20,16 @@ from tqdm.contrib.concurrent import process_map
 # https://github.com/pytorch/pytorch/issues/19996
 torch.set_num_threads(1)
 
-dataset_dir = "data/llight-1h_lspeech-other-dev-test"
-dev_tsv = "dev-other.tsv"
+config = oc.OmegaConf.from_cli()
 
-lm_dir = "models/lm_librispeech-4gram_4GB"
+df = pd.read_csv(os.path.join(config.dataset_dir, config.dev_tsv), sep="\t")
+df['audio'] = df.path.apply(lambda p: sf.read(os.path.join(config.dataset_dir, p))[0])
 
-processor_dir = "models/w2v2-large_llight10m0_2e-5_all-cps"
-cps_glob      = "models/w2v2-large_llight10m0_2e-5_all-cps/checkpoint-*"
-
-results_csv = "tmp/eng_all_cp_results.csv"
-
-df = pd.read_csv(os.path.join(dataset_dir, dev_tsv), sep="\t")
-df['audio'] = df.path.apply(lambda p: sf.read(os.path.join(dataset_dir, p))[0])
-
-processor = hft.Wav2Vec2Processor.from_pretrained(processor_dir)
+processor = hft.Wav2Vec2Processor.from_pretrained(config.processor_dir)
 
 beam_search_decoder = ctc_decoder(
-    lexicon=os.path.join(lm_dir, "lexicon.txt"),
-    lm=os.path.join(lm_dir, "lm.bin"),
+    lexicon=os.path.join(config.lm_dir, "lexicon.txt"),
+    lm=os.path.join(config.lm_dir, "lm.bin"),
     tokens=list(processor.tokenizer.get_vocab().keys()),
     blank_token=processor.tokenizer.pad_token,
     sil_token=processor.tokenizer.word_delimiter_token,
@@ -56,7 +49,7 @@ def logits_to_preds(logits):
 
 all_cp_results = []
 
-for cp_path in natsorted(glob.glob(cps_glob)):
+for cp_path in natsorted(glob.glob(config.cps_glob)):
 
     cp_name = os.path.basename(cp_path)
 
@@ -108,12 +101,10 @@ for cp_path in natsorted(glob.glob(cps_glob)):
 
     all_cp_results.append(results)
 
-    print(results)
-
 all_df = pd.DataFrame(all_cp_results)
 all_df.Checkpoint = all_df.Checkpoint.apply(lambda c: c.replace('checkpoint-', '')).astype(int)
 
-all_df.to_csv(results_csv, index=False)
+all_df.to_csv(config.results_csv, index=False)
 
 print("Checkpoint with lowest WERs: ")
 wers_df = all_df[['Checkpoint', 'NoLM_WER', 'WiLM_WER']].melt(id_vars='Checkpoint')

@@ -9,3 +9,4 @@ tmp/*
 !data/gos-demo
 wandb
 .vscode
+.ipynb_checkpoints

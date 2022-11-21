@@ -2,7 +2,42 @@
 # uncomment for yourself if applicable
 export CUDA_VISIBLE_DEVICES="1"
 
+# exit when any command fails
+set -e
+
 # Set parameters for each language
+
+declare -rgA ENG=(
+    # wav2vec 2.0 model checkpoint and processor paths
+    [processor_dir]="models/w2v2-large_llight10m0_2e-5"
+    [checkpoint_dir]="models/w2v2-large_llight10m0_2e-5/checkpoint-1500"
+
+    [corpus_txt]="data/lm/librispeech-lm-norm_lower.txt"
+    # Language model configs, space-separated "n_gram:sample_size" where
+    # sample_size is indicated in number of tokens. This size is passed to
+    # a Python script, which allows '_' in numbers (e.g. 800_000)
+    [lm_configs]="4:8_000_000 3:80_000 2:8000"
+
+    # Tune on LM alpha/beta on dev then evaluate on test with best parameters
+    [dev_tsv]="data/llight-1h_lspeech-other-dev-test/dev-other.tsv"
+    [test_tsv]="data/llight-1h_lspeech-other-dev-test/test-other.tsv"
+)
+
+declare -rgA ENGcc=(
+    # wav2vec 2.0 model checkpoint and processor paths
+    [processor_dir]="models/w2v2-large_llight10m0_2e-5"
+    [checkpoint_dir]="models/w2v2-large_llight10m0_2e-5/checkpoint-1500"
+
+    [corpus_txt]="data/lm/commoncrawl-9pc.en"
+    # Language model configs, space-separated "n_gram:sample_size" where
+    # sample_size is indicated in number of tokens. This size is passed to
+    # a Python script, which allows '_' in numbers (e.g. 800_000)
+    [lm_configs]="3:80_000 2:8000"
+
+    # Tune on LM alpha/beta on dev then evaluate on test with best parameters
+    [dev_tsv]="data/llight-1h_lspeech-other-dev-test/dev-other.tsv"
+    [test_tsv]="data/llight-1h_lspeech-other-dev-test/test-other.tsv"
+)
 
 declare -rgA GOS=(
     # wav2vec 2.0 model checkpoint and processor paths
@@ -34,7 +69,7 @@ declare -rgA FRY=(
     [test_tsv]="data/20221103_fry/test.tsv"
 )
 
-langs=("GOS" "FRY")
+langs=("ENG" "ENGcc" "GOS" "FRY")
 
 # Path to KenLM binaries
 # See https://github.com/kpu/kenlm#compiling for installation instructions
@@ -89,6 +124,26 @@ for lang in "${langs[@]}"; do
     # Write combined outputs to csv file (match the LM decoding experiments format below)
     echo "lm_weight,word_score,wer_dev,cer_dev,wer_test,cer_test" > "${GREEDY_DIR}/results.csv"
     echo "NA,NA,${dev_wer_cer},${dev_wer_cer}" >> "${GREEDY_DIR}/results.csv"
+
+    # Run decoding with 4-gram LM trained on full corpus
+    TOPLINE_DIR="${LANG_DIR}/${lang}-4gram_FULL"
+    mkdir -p ${TOPLINE_DIR}
+
+    $LMPLZ_BIN -o 4 < ${config[corpus_txt]} > "${TOPLINE_DIR}/lm.arpa"
+    $BUILD_BIN "${TOPLINE_DIR}/lm.arpa" "${TOPLINE_DIR}/lm.bin"
+
+    python generate_lexicon.py --data ${config[corpus_txt]} --outpath "${TOPLINE_DIR}/"
+
+    python run_one-decode-exp.py \
+        exp_dir="'${TOPLINE_DIR}'"\
+        dev_tsv="'${config[dev_tsv]}'" \
+        test_tsv="'${config[test_tsv]}'" \
+        dev_logits="'${dev_logits}'" \
+        test_logits="'${test_logits}'" \
+        processor_dir="'${config[processor_dir]}'" \
+        decoder.lexicon="'${TOPLINE_DIR}/lexicon.txt'" \
+        decoder.lm="'${TOPLINE_DIR}/lm.bin'" \
+        search_iter=32
 
     for seed in {1..5}; do
 
