@@ -78,6 +78,8 @@ python decode_greedy.py \
 # 0.5316642120765832,0.1579697747362418
 ```
 
+**Note:** the `gos-demo` files are not from the dataset used in the paper (hence the dev/test WER/CER will not be the same as reported for Gronings).
+
 #### 2.2.4 Beam search decoding (with lexicon and language model) on test set
 
 Using `lm_weight=2.77` and `word_score=1.21` based on a hyper-parameter search (see script below). Notice a 9.2\% absolute improvement compared to greedy decoding above (53.2% greedy vs. 44.0% beam search w/ lexicon & LM).
@@ -96,6 +98,8 @@ python decode_beam-search.py \
 # Output (WER,CER)
 # 0.44035346097201766,0.1497005988023952
 ```
+
+**Note:** the `gos-demo` files are not from the dataset used in the paper (hence the dev/test WER/CER will not be the same as reported for Gronings).
 
 ## 3. Miscellaneous scripts
 
