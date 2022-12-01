@@ -27,6 +27,20 @@ data:
     #     mins: 10
     #     seed: 1
 
+    # Comment out if you want static batch sizes (e.g. batch size of 16 items)
+    # dynamic batch sizes mean 
+    train_sampler:
+        # Static method takes no args
+        method: "static"
+
+        # method: DynamicBatchSampler
+        # args:
+        #     num_buckets: 200
+        #     # Max total batch length in seconds
+        #     max_batch_length: 15
+        #     shuffle: True
+        #     batch_ordering: random
+
 w2v2:
     # Arguments for Wav2Vec2Processor()
     # https://huggingface.co/docs/transformers/v4.23.1/model_doc/wav2vec2#transformers.Wav2Vec2Processor

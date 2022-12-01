@@ -25,15 +25,30 @@ datasets = utils.load_datasets(config['data'], processor)
 # Set verbosity to info, otherwise trainer progress bar isn't shown
 hft.logging.set_verbosity_info()
 
-trainer = w2v2.ReplicationTrainer(
-    model=model,
-    data_collator=w2v2.DataCollatorCTCWithPadding(processor=processor, padding=True),
-    args=hft.TrainingArguments(**config['trainargs']),
-    compute_metrics=w2v2.MetricsComputer(config, processor),
-    train_dataset=datasets['train'],
-    eval_dataset=datasets['eval'],
-    tokenizer=processor.feature_extractor
-)
+if config['data']['train_sampler']['method'] == "DynamicBatchSampler":
+
+    trainer = w2v2.ReplicationTrainerWithDynamicBatching(
+        dbargs=config['data']['train_sampler']['args'],
+        model=model,
+        data_collator=w2v2.DataCollatorCTCWithPadding(processor=processor, padding=True),
+        args=hft.TrainingArguments(**config['trainargs']),
+        compute_metrics=w2v2.MetricsComputer(config, processor),
+        train_dataset=datasets['train'],
+        eval_dataset=datasets['eval'],
+        tokenizer=processor.feature_extractor
+    )
+
+else:
+
+    trainer = w2v2.ReplicationTrainer(
+        model=model,
+        data_collator=w2v2.DataCollatorCTCWithPadding(processor=processor, padding=True),
+        args=hft.TrainingArguments(**config['trainargs']),
+        compute_metrics=w2v2.MetricsComputer(config, processor),
+        train_dataset=datasets['train'],
+        eval_dataset=datasets['eval'],
+        tokenizer=processor.feature_extractor
+    )
 
 utils.announce("Beginning training")
 

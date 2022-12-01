@@ -8,6 +8,8 @@ import transformers as hft
 import typing
 import wandb
 
+from torch.utils.data import DataLoader
+
 def configure_hf_w2v2_model(config):
 
     print(f"Loading {config['w2v2']['model']['pretrained_model_name_or_path']} model ...")
@@ -60,6 +62,9 @@ class DataCollatorCTCWithPadding:
         # different padding methods
         input_features = [{"input_values": feature["input_values"]} for feature in features]
         label_features = [{"input_ids": feature["labels"]} for feature in features]
+
+        # For debugging dynamic batching
+        # print(f"Batch size: {len(input_features)} items, total duration: {sum([ len(feats['input_values'])/16_000 for feats in input_features ])} s")
 
         batch = self.processor.pad(
             input_features,
@@ -207,3 +212,68 @@ class ReplicationTrainer(hft.Trainer):
     def create_optimizer_and_scheduler(self, num_training_steps):
         self.create_optimizer()
         self.create_flat_scheduler(num_training_steps)
+
+class ReplicationTrainerWithDynamicBatching(ReplicationTrainer):
+
+    def __init__(self, dbargs, *args, **kwargs):
+        self.dbargs=dbargs
+        super().__init__(*args, **kwargs)
+
+    # Copied as-is from https://github.com/huggingface/transformers/blob/main/src/transformers/trainer.py
+    # We just replace the 'return DataLoader(...)' depending on our config
+    def get_train_dataloader(self) -> DataLoader:
+
+        """
+        Returns the training [`~torch.utils.data.DataLoader`].
+        Will use no sampler if `train_dataset` does not implement `__len__`, a random sampler (adapted to distributed
+        training if necessary) otherwise.
+        Subclass and override this method if you want to inject some custom behavior.
+        """
+        if self.train_dataset is None:
+            raise ValueError("Trainer: training requires a train_dataset.")
+
+        train_dataset = self.train_dataset
+        data_collator = self.data_collator
+        if hft.utils.is_datasets_available() and isinstance(train_dataset, hfds.Dataset):
+            train_dataset = self._remove_unused_columns(train_dataset, description="training")
+        else:
+            data_collator = self._get_collator_with_removed_columns(data_collator, description="training")
+
+        if isinstance(train_dataset, torch.utils.data.IterableDataset):
+            if self.args.world_size > 1:
+                train_dataset = hft.trainer_pt_utils.IterableDatasetShard(
+                    train_dataset,
+                    batch_size=self._train_batch_size,
+                    drop_last=self.args.dataloader_drop_last,
+                    num_processes=self.args.world_size,
+                    process_index=self.args.process_index,
+                )
+
+            return DataLoader(
+                train_dataset,
+                batch_size=self.args.per_device_train_batch_size,
+                collate_fn=data_collator,
+                num_workers=self.args.dataloader_num_workers,
+                pin_memory=self.args.dataloader_pin_memory,
+            )
+
+        from speechbrain.dataio.sampler import DynamicBatchSampler
+
+        # Make train_dataset compatible with structure DynamicBatchSampler() expects
+        self.train_dataset.data_ids = None
+
+        train_sampler = DynamicBatchSampler(
+            dataset=self.train_dataset,
+            lengths_list=[ len(i)/16_000 for i in self.train_dataset['input_values'] ],
+            **self.dbargs
+        )
+
+        return DataLoader(
+            train_dataset,
+            batch_sampler=train_sampler,
+            collate_fn=data_collator,
+            drop_last=self.args.dataloader_drop_last,
+            num_workers=self.args.dataloader_num_workers,
+            pin_memory=self.args.dataloader_pin_memory,
+            worker_init_fn=hft.trainer_utils.seed_worker,
+        )
